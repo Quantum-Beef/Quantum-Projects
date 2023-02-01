@@ -1,0 +1,17 @@
+t=40;
+latticeLength=20;
+lengthSize=2*latticeLength + 1;
+totalSize=(lengthSize)^2;
+vertexDegree=4;
+gamma=1/8.Sqrt[2];
+H = Table[If[i==j, 4.*gamma,If[i==j+1 || i==j-1 || i==j+lengthSize || i==j-lengthSize, -gamma,0]],{i,totalSize},{j,totalSize}];
+expH=MatrixExp[-I*t*H];
+initialStateij=KroneckerProduct[{Table[If[i==latticeLength+1,1,0],{i,2*latticeLength + 1}]},{Table[If[i==latticeLength+1,1,0],{i,2*latticeLength + 1}]}][[1]];
+Psi=expH.initialStateij;
+jIndex = Join @@ {#}[[ConstantArray[1, #2]]] &;
+jIndex=jIndex[Range[-latticeLength,latticeLength], lengthSize];
+iIndex = Flatten@Transpose[{#}[[ConstantArray[1, #2]]]] &;
+iIndex=iIndex[Range[-latticeLength,latticeLength], lengthSize];
+output=Table[{iIndex[[i]],jIndex[[i]],N[Abs[Psi[[i]]]^2]},{i,totalSize}];
+Export["LatticeCTQW_t20_L20_gamma2.csv",output];
+CopyFile["LatticeCTQW_t20_L20.csv",CloudObject["LatticeCTQW_t20_L20.csv"],OverwriteTarget->True]
