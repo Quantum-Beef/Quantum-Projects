@@ -1,0 +1,39 @@
+PacletInstall[CloudObject["https://wolfr.am/DevWQCF"], ForceVersionInstall -> True];
+<< Wolfram`QuantumFramework`;
+
+groverMatrix={{-1/2,1/2,1/2,1/2},{1/2,-1/2,1/2,1/2},{1/2,1/2,-1/2,1/2},{1/2,1/2,1/2,-1/2}};
+addMatrix[n_]:=SparseArray[Table[{If[i+1>n,i-(n-1),i+1],i}->1,{i,n}]];
+subMatrix[n_]:=SparseArray[Table[{If[i==1,n,i-1],i}->1,{i,n}]];
+
+addOp= QuantumOperator[addMatrix[#1],{},#1] &;
+subOp= QuantumOperator[subMatrix[#1],{},#1] &;
+
+(*ctrAddn = QuantumOperator[{"Controlled", addOp[qudit], list{ctrlclosed}, list{ctrlopen} }, list{targets}];*)
+ctrlAdd = QuantumOperator[{"Controlled",addOp[#1], #2, #3}, #4] &;
+ctrlSub = QuantumOperator[{"Controlled",subOp[#1], #2, #3}, #4] &;
+
+oracle[N_]:=ctrlSub[N,{3},{4},{2}]@ctrlAdd[N,{4},{3},{2}]@ctrlSub[N,{3,4},{},{1}]@ctrlAdd[N,{},{3,4},{1}]@QuantumOperator[groverMatrix,{3,4}];
+
+simulation[T_,coinState1_,coinState2_]:=Module[{N,qubitState,systemState,systemOracle},
+N=2T + 1;
+qubitState=QuantumState[SparseArray[{T+1}->1,{N}],N]; (*This needs to act on the first and second qubits*)
+systemState=QuantumTensorProduct[qubitState,qubitState,coinState1,coinState2];
+systemOracle=oracle[N];
+NestList[systemOracle,systemState,T]
+]
+
+P=20;
+G=2P +1;
+
+jIndex = Join @@ {#}[[ConstantArray[1, #2]]] &;
+jIndex=jIndex[Range[-P,P], G];
+iIndex = Flatten@Transpose[{#}[[ConstantArray[1, #2]]]] &;
+iIndex=iIndex[Range[-P,P], G];
+
+output1=simulation[P,QuantumState[{1/Sqrt[2],-1/Sqrt[2]},2],QuantumState[{1/Sqrt[2],-1/Sqrt[2]},2]][[-1]];
+preResult1=Diagonal[QuantumPartialTrace[output1, {3,4}]["DensityMatrix"]];
+result1=ArrayReshape[preResult1,{G,G}];
+listResult1=Normal[preResult1];
+exportData1=Table[{iIndex[[i]],jIndex[[i]],N[listResult1[[i]]]},{i,G^2}];
+Export["Grover_P20_00-01-10+11.csv",exportData1];
+CopyFile["Grover_P20_00-01-10+11.csv",CloudObject["Grover_P20_00-01-10+11.csv"],OverwriteTarget->True]
