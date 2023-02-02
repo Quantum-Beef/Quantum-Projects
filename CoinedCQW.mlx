@@ -1,0 +1,31 @@
+walkLength=100;
+
+walkRange=-walkLength:walkLength;
+walkFrequencies=zeros(2*walkLength +1,1);
+
+iterations=1000;
+
+output=[];
+
+for i=1:iterations
+    position=0;
+    coinFlipList=randi([0,1],[walkLength,1]);
+    for elem=1:walkLength
+        if coinFlipList(elem)==0
+            position=position+1;
+        else
+            position=position-1;
+        end
+    end
+    output(end+1)=position;
+end
+
+[GC,GR] = groupcounts(output');
+
+for elem=1:length(GR)
+    pos=GR(elem);
+    posIndex=pos+(walkLength+1);
+    walkFrequencies(posIndex)=GC(elem);
+end
+
+bar(walkFrequencies)
